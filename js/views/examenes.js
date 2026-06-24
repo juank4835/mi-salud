@@ -152,15 +152,19 @@ function agrupar(metricas) {
   return por;
 }
 
-function modalMetrica(nombre, lecturas) {
+function modalMetrica(nombre, lecturas, docsById = {}) {
   return new Promise((resolve) => {
     const root = $("#modal-root");
     const ult = lecturas[lecturas.length - 1];
+    const hayLinks = lecturas.some(l => docsById[l.examenId]);
     const filas = lecturas.slice().reverse().map(l => {
       const fuera = l.fuera === "alto" || l.fuera === "bajo";
       const tag = fuera ? `<span class="pill pill--danger">${l.fuera === "alto" ? "Alto" : "Bajo"}</span>`
         : `<span class="pill pill--ok">Normal</span>`;
-      return `<tr><td>${fmtFecha(l.fecha)}</td>
+      const doc = docsById[l.examenId];
+      const attr = doc ? `data-exam="${esc(l.examenId)}" style="cursor:pointer"` : "";
+      const sub = doc ? `<div class="muted" style="font-size:12px">${esc(doc.titulo)} ›</div>` : "";
+      return `<tr ${attr}><td>${fmtFecha(l.fecha)}${sub}</td>
         <td><span class="metric-val">${esc(String(l.valor))}</span> <span class="muted">${esc(l.unidad || "")}</span></td>
         <td>${tag}</td></tr>`;
     }).join("");
@@ -171,11 +175,18 @@ function modalMetrica(nombre, lecturas) {
         <div class="muted" style="margin-bottom:12px">${esc(ult.categoria || "")}${ult.ref ? ` · rango normal: ${esc(ult.ref)}` : ""}</div>
         ${lecturas.length >= 2 ? `<div class="card"><div class="chart-wrap"><canvas id="m-chart"></canvas></div></div>` : ""}
         <table class="readings mt"><tbody>${filas}</tbody></table>
-        <p class="muted center" style="font-size:12px;margin-top:12px">Informativo, no diagnóstico.</p>
+        ${hayLinks ? `<p class="muted center" style="font-size:12px;margin-top:10px">Toca una fila para ver el examen de donde salió.</p>` : ""}
+        <p class="muted center" style="font-size:12px;margin-top:6px">Informativo, no diagnóstico.</p>
       </div></div>`;
     const close = () => { if (chart) { chart.destroy(); chart = null; } root.innerHTML = ""; resolve(); };
     $("#m-close").onclick = close;
     $("#m-overlay").onclick = (e) => { if (e.target.id === "m-overlay") close(); };
+    root.querySelectorAll("tr[data-exam]").forEach(tr => tr.onclick = () => {
+      const doc = docsById[tr.dataset.exam];
+      if (!doc) return;
+      close();
+      modalDoc(doc);
+    });
     if (lecturas.length >= 2) dibujar($("#m-chart"), lecturas);
   });
 }
@@ -228,7 +239,9 @@ function filaMetrica(nombre, lecturas) {
   </div>`;
 }
 
-function pintarIndicadores(cont, metricas) {
+function pintarIndicadores(cont, metricas, docs = []) {
+  const docsById = {};
+  docs.forEach(d => { docsById[d.id] = d; });
   if (!metricas.length) {
     cont.innerHTML = vacio("∿", "Aún sin indicadores",
       "Sube un examen en la pestaña Documentos y pídeme que lo revise. Aquí aparecerán tus métricas organizadas.");
@@ -267,7 +280,7 @@ function pintarIndicadores(cont, metricas) {
 
   const todas = agrupar(metricas);
   cont.querySelectorAll(".row[data-met]").forEach(r =>
-    r.onclick = () => modalMetrica(r.dataset.met, todas[r.dataset.met]));
+    r.onclick = () => modalMetrica(r.dataset.met, todas[r.dataset.met], docsById));
 }
 
 /* ==================== Render ==================== */
@@ -286,7 +299,7 @@ export default function render(app) {
   const cont = app.querySelector("#cont");
 
   function pintar() {
-    if (tab === "indicadores") pintarIndicadores(cont, metricas);
+    if (tab === "indicadores") pintarIndicadores(cont, metricas, docs);
     else {
       if (!docs.length) { cont.innerHTML = vacio("∿", "Sin documentos", "Toca + para subir tu primer examen (PDF o foto)."); return; }
       cont.innerHTML = `<div class="list">${docs.map(filaDoc).join("")}</div>`;
@@ -300,8 +313,8 @@ export default function render(app) {
     pintar();
   });
 
-  const u1 = watch(COL_DOC, "fecha", (items) => { docs = items; if (tab === "documentos") pintar(); });
-  const u2 = watch(COL_MET, "fecha", (items) => { metricas = items; if (tab === "indicadores") pintar(); });
+  const u1 = watch(COL_DOC, "fecha", (items) => { docs = items; pintar(); });
+  const u2 = watch(COL_MET, "fecha", (items) => { metricas = items; pintar(); });
 
   return () => { u1(); u2(); if (chart) { chart.destroy(); chart = null; } };
 }

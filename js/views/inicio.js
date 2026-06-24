@@ -23,15 +23,33 @@ export default function render(app) {
       const cur = ultimaPorNombre[m.nombre];
       if (!cur || (m.fecha || "") > (cur.fecha || "")) ultimaPorNombre[m.nombre] = m;
     });
-    const fuera = Object.values(ultimaPorNombre).filter(m => m.fuera === "alto" || m.fuera === "bajo");
+    const nivel = (u) => {
+      if (!(u.fuera === "alto" || u.fuera === "bajo")) return "normal";
+      if (u.severidad === "leve") return "leve";
+      if (u.severidad) return "marcado";
+      const v = Number(u.valor);
+      const lo = (u.refMin === 0 || u.refMin) ? Number(u.refMin) : null;
+      const hi = (u.refMax === 0 || u.refMax) ? Number(u.refMax) : null;
+      let ex = 0, dn = 1;
+      if (u.fuera === "alto" && hi != null) { ex = v - hi; dn = (lo != null ? hi - lo : Math.abs(hi)) || 1; }
+      else if (u.fuera === "bajo" && lo != null) { ex = lo - v; dn = (hi != null ? hi - lo : Math.abs(lo)) || 1; }
+      return (ex / dn) <= 0.2 ? "leve" : "marcado";
+    };
+    const fuera = Object.values(ultimaPorNombre).filter(m => m.fuera === "alto" || m.fuera === "bajo")
+      .sort((a, b) => (nivel(b) === "marcado") - (nivel(a) === "marcado"));
     const fueraHTML = fuera.length ? `<div class="section">
-      <div class="section__head"><h2>Indicadores fuera de rango</h2><a class="section__count" href="#/examenes">Ver todos</a></div>
-      <div class="list">${fuera.map(m => `<div class="row">
-        <div class="row__accent accent--danger"></div>
+      <div class="section__head"><h2>Indicadores a revisar</h2><a class="section__count" href="#/examenes">Ver todos</a></div>
+      <div class="list">${fuera.map(m => {
+        const nv = nivel(m);
+        const acc = nv === "marcado" ? "accent--danger" : "accent--warn";
+        const pill = nv === "marcado" ? `<span class="pill pill--danger">${m.fuera === "alto" ? "Alto" : "Bajo"}</span>`
+          : `<span class="pill pill--warn">${m.fuera === "alto" ? "Alto" : "Bajo"} leve</span>`;
+        return `<div class="row">
+        <div class="row__accent ${acc}"></div>
         <div class="row__main"><div class="row__title">${esc(m.nombre)} <span class="muted">· ${esc(String(m.valor))} ${esc(m.unidad || "")}</span></div>
           <div class="row__sub">${fmtFecha(m.fecha)}${m.ref ? ` · normal: ${esc(m.ref)}` : ""}</div></div>
-        <div class="row__meta"><span class="pill pill--danger">${m.fuera === "alto" ? "Alto" : "Bajo"}</span></div>
-      </div>`).join("")}</div></div>` : "";
+        <div class="row__meta">${pill}</div>
+      </div>`; }).join("")}</div></div>` : "";
 
     let proxHTML;
     if (prox) {

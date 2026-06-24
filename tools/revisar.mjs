@@ -90,6 +90,7 @@ async function save() {
     valor: m.valor ?? null, unidad: m.unidad ?? "",
     ref: m.ref ?? "", refMin: m.refMin ?? null, refMax: m.refMax ?? null,
     fuera: m.fuera ?? null,
+    severidad: m.severidad ?? null,      // "leve" (ámbar) o "marcado" (rojo); null = auto
     analisis: m.analisis ?? "",          // explicación individual de la métrica
   }));
 

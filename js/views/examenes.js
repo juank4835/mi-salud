@@ -112,11 +112,9 @@ function filaDoc(x) {
 }
 
 function valorRow(v) {
-  const fuera = v.fuera === "alto" || v.fuera === "bajo";
-  const pill = fuera ? `<span class="pill pill--danger">${v.fuera === "alto" ? "Alto" : "Bajo"}</span>`
-    : `<span class="pill pill--ok">Normal</span>`;
+  const pill = pillMetrica(v);
   return `<div class="row" style="padding:10px 12px">
-    <div class="row__accent ${fuera ? "accent--danger" : "accent--ok"}"></div>
+    <div class="row__accent ${NV_ACCENT[nivel(v)]}"></div>
     <div class="row__main">
       <div class="row__title">${esc(v.nombre)} <span class="muted">· ${esc(String(v.valor))} ${esc(v.unidad || "")}</span></div>
       ${v.ref ? `<div class="row__sub">Rango: ${esc(v.ref)}</div>` : ""}
@@ -175,9 +173,7 @@ function modalMetrica(nombre, lecturas, docsById = {}) {
     const ult = lecturas[lecturas.length - 1];
     const hayLinks = lecturas.some(l => docsById[l.examenId]);
     const filas = lecturas.slice().reverse().map(l => {
-      const fuera = l.fuera === "alto" || l.fuera === "bajo";
-      const tag = fuera ? `<span class="pill pill--danger">${l.fuera === "alto" ? "Alto" : "Bajo"}</span>`
-        : `<span class="pill pill--ok">Normal</span>`;
+      const tag = pillMetrica(l);
       const doc = docsById[l.examenId];
       const attr = doc ? `data-exam="${esc(l.examenId)}" style="cursor:pointer"` : "";
       const sub = doc ? `<div class="muted" style="font-size:12px">${esc(doc.titulo)} ›</div>` : "";
@@ -256,9 +252,9 @@ function gauge(ult) {
   }
   const span2 = (sHi - sLo) || 1;
   const pct = x => Math.max(0, Math.min(100, ((x - sLo) / span2) * 100));
-  const fuera = ult.fuera === "alto" || ult.fuera === "bajo";
+  const nv = nivel(ult);
   const bandL = pct(bandLo), bandW = pct(bandHi) - pct(bandLo), mk = pct(v);
-  const markCol = fuera ? "var(--danger)" : "var(--text-2)";
+  const markCol = nv === "marcado" ? "var(--danger)" : nv === "leve" ? "var(--warn)" : "var(--text-2)";
 
   return `<div style="position:relative;height:34px;width:100%">
     <div style="position:absolute;top:13px;left:0;right:0;height:7px;border-radius:999px;background:var(--card-2)">
@@ -273,7 +269,6 @@ function gauge(ult) {
 function filaMetrica(nombre, lecturas) {
   const ult = lecturas[lecturas.length - 1];
   const prev = lecturas.length >= 2 ? lecturas[lecturas.length - 2] : null;
-  const fuera = ult.fuera === "alto" || ult.fuera === "bajo";
   let trend = "";
   if (prev != null && prev.valor != null && ult.valor != null) {
     const d = Number(ult.valor) - Number(prev.valor);
@@ -281,10 +276,9 @@ function filaMetrica(nombre, lecturas) {
     const ds = d === 0 ? "igual" : `${d > 0 ? "+" : ""}${Math.round(d * 100) / 100}`;
     trend = `<div class="trend ${cls}">${ds}</div>`;
   }
-  const pill = fuera ? `<span class="pill pill--danger">${ult.fuera === "alto" ? "Alto" : "Bajo"}</span>`
-    : `<span class="pill pill--ok">Normal</span>`;
+  const pill = pillMetrica(ult);
   return `<div class="row" data-met="${esc(nombre)}" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:8px">
-    <div class="row__accent ${fuera ? "accent--danger" : "accent--ok"}"></div>
+    <div class="row__accent ${NV_ACCENT[nivel(ult)]}"></div>
     <div style="display:flex;align-items:flex-start;gap:13px">
       <div class="row__main">
         <div class="row__title">${esc(nombre)}</div>
@@ -300,6 +294,31 @@ function filaMetrica(nombre, lecturas) {
 }
 
 const esFuera = u => u && (u.fuera === "alto" || u.fuera === "bajo");
+
+// Nivel de un indicador: "normal" (verde), "leve" (ámbar) o "marcado" (rojo).
+// Usa la severidad que asigna Claude; si no, estima por cuánto se pasó del rango.
+function nivel(u) {
+  if (!esFuera(u)) return "normal";
+  const s = u.severidad;
+  if (s === "leve") return "leve";
+  if (s === "marcado" || s === "alto" || s === "severo" || s === "moderado") return "marcado";
+  const v = Number(u.valor);
+  const lo = (u.refMin === 0 || u.refMin) ? Number(u.refMin) : null;
+  const hi = (u.refMax === 0 || u.refMax) ? Number(u.refMax) : null;
+  let exceso = 0, denom = 1;
+  if (u.fuera === "alto" && hi != null) { exceso = v - hi; denom = (lo != null ? hi - lo : Math.abs(hi)) || 1; }
+  else if (u.fuera === "bajo" && lo != null) { exceso = lo - v; denom = (hi != null ? hi - lo : Math.abs(lo)) || 1; }
+  return (exceso / denom) <= 0.2 ? "leve" : "marcado";
+}
+const NV_ACCENT = { normal: "accent--ok", leve: "accent--warn", marcado: "accent--danger" };
+const NV_ICON = { normal: "ok", leve: "warn", marcado: "bad" };
+function pillMetrica(u) {
+  const n = nivel(u);
+  if (n === "normal") return `<span class="pill pill--ok">Normal</span>`;
+  const dir = u.fuera === "alto" ? "Alto" : "Bajo";
+  return n === "leve" ? `<span class="pill pill--warn">${dir} leve</span>`
+                      : `<span class="pill pill--danger">${dir}</span>`;
+}
 
 function pintarIndicadores(cont, metricas, docs, areaAbierta, setArea) {
   const docsById = {};
@@ -323,14 +342,18 @@ function pintarIndicadores(cont, metricas, docs, areaAbierta, setArea) {
   if (areaAbierta && porCat[areaAbierta]) {
     const por = agrupar(porCat[areaAbierta]);
     const nombres = Object.keys(por).sort();
-    const nFueraArea = nombres.filter(n => esFuera(por[n][por[n].length - 1])).length;
+    const nvs = nombres.map(n => nivel(por[n][por[n].length - 1]));
+    const nMarc = nvs.filter(x => x === "marcado").length, nLeve = nvs.filter(x => x === "leve").length;
+    const worst = nMarc ? "marcado" : nLeve ? "leve" : "normal";
+    const sub = nMarc ? `${nMarc} a revisar${nLeve ? ` · ${nLeve} leve${nLeve > 1 ? "s" : ""}` : ""}`
+      : nLeve ? `${nLeve} levemente fuera` : "todo en rango";
     cont.innerHTML = `
       <button class="btn btn--ghost" id="volver" style="margin-bottom:14px">‹ Todas las áreas</button>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-        <div class="area__icon area__icon--${nFueraArea ? "bad" : "ok"}">${catIcono(areaAbierta)}</div>
+        <div class="area__icon area__icon--${NV_ICON[worst]}">${catIcono(areaAbierta)}</div>
         <div style="flex:1;min-width:0">
           <h2 style="margin:0;font-size:19px;letter-spacing:-0.02em">${esc(areaAbierta)}</h2>
-          <div class="muted" style="font-size:13px">${nombres.length} indicador${nombres.length > 1 ? "es" : ""}${nFueraArea ? ` · ${nFueraArea} fuera de rango` : ""}</div>
+          <div class="muted" style="font-size:13px">${nombres.length} indicador${nombres.length > 1 ? "es" : ""} · ${sub}</div>
         </div>
       </div>
       <div class="list">${nombres.map(n => filaMetrica(n, por[n])).join("")}</div>`;
@@ -341,11 +364,16 @@ function pintarIndicadores(cont, metricas, docs, areaAbierta, setArea) {
   }
 
   // ---------- Nivel 1: tablero de áreas ----------
-  const fueraTotal = Object.values(todas).filter(arr => esFuera(arr[arr.length - 1])).length;
-  let html = fueraTotal
+  const niv = Object.values(todas).map(arr => nivel(arr[arr.length - 1]));
+  const totMarc = niv.filter(x => x === "marcado").length, totLeve = niv.filter(x => x === "leve").length;
+  let html = totMarc
     ? `<div class="banner banner--bad"><span class="banner__dot"></span><div>
-         <strong>${fueraTotal} indicador${fueraTotal > 1 ? "es" : ""} fuera de rango</strong>
-         <div class="muted">Toca un área para ver el detalle.</div></div></div>`
+         <strong>${totMarc} a revisar${totLeve ? ` · ${totLeve} leve${totLeve > 1 ? "s" : ""}` : ""}</strong>
+         <div class="muted">Fuera de rango no es lo mismo que grave. Lo interpreta tu médico.</div></div></div>`
+    : totLeve
+    ? `<div class="banner banner--warn"><span class="banner__dot"></span><div>
+         <strong>${totLeve} indicador${totLeve > 1 ? "es" : ""} levemente fuera</strong>
+         <div class="muted">Nada marcado. Estar un poco fuera del rango suele ser normal.</div></div></div>`
     : `<div class="banner banner--good"><span class="banner__dot"></span><div>
          <strong>Todo dentro de rango</strong>
          <div class="muted">En la lectura más reciente de cada indicador.</div></div></div>`;
@@ -355,16 +383,21 @@ function pintarIndicadores(cont, metricas, docs, areaAbierta, setArea) {
     const nombres = Object.keys(por);
     const ultimaFecha = porCat[cat].reduce((mx, m) => ((m.fecha || "") > mx ? m.fecha : mx), "");
     const fueraNombres = nombres.filter(n => esFuera(por[n][por[n].length - 1]));
-    const nFuera = fueraNombres.length;
-    const badge = nFuera
-      ? `<span class="pill pill--danger">${nFuera} fuera</span>`
+    const nMarc = nombres.filter(n => nivel(por[n][por[n].length - 1]) === "marcado").length;
+    const nLeve = fueraNombres.length - nMarc;
+    const worst = nMarc ? "marcado" : nLeve ? "leve" : "normal";
+    const badge = nMarc
+      ? `<span class="pill pill--danger">${fueraNombres.length} fuera</span>`
+      : nLeve
+      ? `<span class="pill pill--warn">${nLeve} leve${nLeve > 1 ? "s" : ""}</span>`
       : `<span class="pill pill--ok">Normal</span>`;
-    const chips = nFuera
-      ? `<div class="area__chips">${fueraNombres.slice(0, 3).map(n => `<span class="chip chip--bad">${esc(n)}</span>`).join("")}${nFuera > 3 ? `<span class="chip">+${nFuera - 3}</span>` : ""}</div>`
+    const chips = fueraNombres.length
+      ? `<div class="area__chips">${fueraNombres.slice(0, 3).map(n =>
+          `<span class="chip ${nivel(por[n][por[n].length - 1]) === "marcado" ? "chip--bad" : "chip--warn"}">${esc(n)}</span>`).join("")}${fueraNombres.length > 3 ? `<span class="chip">+${fueraNombres.length - 3}</span>` : ""}</div>`
       : "";
     html += `<div class="card area" data-cat="${esc(cat)}" style="cursor:pointer">
       <div style="display:flex;align-items:center;gap:13px">
-        <div class="area__icon area__icon--${nFuera ? "bad" : "ok"}">${catIcono(cat)}</div>
+        <div class="area__icon area__icon--${NV_ICON[worst]}">${catIcono(cat)}</div>
         <div class="area__main">
           <div class="area__name">${esc(cat)}</div>
           <div class="area__sub">${nombres.length} indicador${nombres.length > 1 ? "es" : ""} · act. ${fmtFecha(ultimaFecha)}</div>

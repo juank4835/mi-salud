@@ -33,19 +33,26 @@ El análisis aparece automáticamente en la app (resumen, comparación, valores 
 
 ## Formato del análisis (`analisis.json`)
 
+Claude parte el PDF en sus métricas individuales. Cada una lleva **categoría** y todo el examen lleva su **fecha real** (la del laboratorio, no la de subida).
+
 ```json
 {
-  "resumen": "Perfil lipídico dentro de rangos salvo LDL levemente alto.",
-  "comparacion": "LDL subió de 118 a 131 desde el examen de marzo; HDL estable.",
-  "valores": [
-    { "nombre": "Colesterol total", "valor": 205, "unidad": "mg/dL", "ref": "< 200", "refMax": 200, "fuera": "alto" },
-    { "nombre": "Colesterol HDL",  "valor": 48,  "unidad": "mg/dL", "ref": "> 40",  "refMin": 40,  "fuera": null },
-    { "nombre": "Colesterol LDL",  "valor": 131, "unidad": "mg/dL", "ref": "< 100", "refMax": 100, "fuera": "alto" },
-    { "nombre": "Triglicéridos",   "valor": 150, "unidad": "mg/dL", "ref": "< 150", "refMax": 150, "fuera": null }
+  "fecha": "2025-07-31",
+  "fuente": "SynLab — Colmédica",
+  "tipo": "Función renal y metabólico",
+  "titulo": "Panel renal + curva de glucosa",
+  "resumen": "Texto claro de qué dice el examen.",
+  "comparacion": "Qué subió/bajó vs el examen anterior del mismo tipo.",
+  "metricas": [
+    { "nombre": "Creatinina", "categoria": "Función renal", "valor": 1.20, "unidad": "mg/dL", "ref": "0.73 - 1.18", "refMin": 0.73, "refMax": 1.18, "fuera": "alto" },
+    { "nombre": "Glicemia en ayunas", "categoria": "Metabólico / Glucosa", "valor": 84, "unidad": "mg/dL", "ref": "70 - 100", "refMin": 70, "refMax": 100, "fuera": null }
   ]
 }
 ```
 
-`fuera` debe ser `"alto"`, `"bajo"` o `null`.
+- `fuera` debe ser `"alto"`, `"bajo"` o `null`.
+- `categoria`: usa nombres consistentes (Función renal, Metabólico / Glucosa, Lípidos, Tiroides, Hematología, Hígado, Vitaminas y minerales, Hormonal, Otros).
+- Al guardar, cada métrica se escribe en la colección `metricas` con su `fecha` y `examenId`, y alimenta la vista **Indicadores** y las gráficas de evolución. Re-ejecutar `save` sobre el mismo examen reemplaza sus métricas (no duplica).
+- `nombre` debe ser **idéntico** entre exámenes para que un indicador se siga en el tiempo (ej. siempre "Creatinina", no "creatinina enzimática").
 
 > Nota: el análisis es informativo y de organización. No es diagnóstico ni reemplaza a tu médico.

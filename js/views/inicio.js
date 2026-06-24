@@ -5,7 +5,7 @@ import { watch } from "../db.js";
 import { esc, vacio, hoyISO, fmtFecha, diasHasta } from "../ui.js";
 
 export default function render(app) {
-  const estado = { medicamentos: [], citas: [], examenes: [], diario: [] };
+  const estado = { medicamentos: [], citas: [], examenes: [], diario: [], metricas: [] };
 
   app.innerHTML = `<div id="dash"><div class="spinner"></div></div>`;
   const dash = app.querySelector("#dash");
@@ -16,6 +16,22 @@ export default function render(app) {
     const prox   = estado.citas.filter(c => c.fecha >= hoy).sort((a, b) => a.fecha.localeCompare(b.fecha))[0];
     const ultExa = estado.examenes.slice().sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
     const ultDia = estado.diario.slice().sort((a, b) => (b.fecha || "").localeCompare(a.fecha || ""))[0];
+
+    // Indicadores fuera de rango (lectura más reciente de cada métrica).
+    const ultimaPorNombre = {};
+    estado.metricas.forEach(m => {
+      const cur = ultimaPorNombre[m.nombre];
+      if (!cur || (m.fecha || "") > (cur.fecha || "")) ultimaPorNombre[m.nombre] = m;
+    });
+    const fuera = Object.values(ultimaPorNombre).filter(m => m.fuera === "alto" || m.fuera === "bajo");
+    const fueraHTML = fuera.length ? `<div class="section">
+      <div class="section__head"><h2>Indicadores fuera de rango</h2><a class="section__count" href="#/examenes">Ver todos</a></div>
+      <div class="list">${fuera.map(m => `<div class="row">
+        <div class="row__accent accent--danger"></div>
+        <div class="row__main"><div class="row__title">${esc(m.nombre)} <span class="muted">· ${esc(String(m.valor))} ${esc(m.unidad || "")}</span></div>
+          <div class="row__sub">${fmtFecha(m.fecha)}${m.ref ? ` · normal: ${esc(m.ref)}` : ""}</div></div>
+        <div class="row__meta"><span class="pill pill--danger">${m.fuera === "alto" ? "Alto" : "Bajo"}</span></div>
+      </div>`).join("")}</div></div>` : "";
 
     let proxHTML;
     if (prox) {
@@ -55,6 +71,8 @@ export default function render(app) {
             <div class="stat__num">${estado.diario.length}</div><div class="stat__label">Registros del diario</div></a>
         </div>
       </div>
+
+      ${fueraHTML}
 
       <div class="section">
         <div class="section__head"><h2>Próxima cita</h2><a class="section__count" href="#/citas">Ver todas</a></div>
@@ -100,6 +118,7 @@ export default function render(app) {
     watch("citas",        "fecha",  items => { estado.citas = items; pinta(); }),
     watch("examenes",     "fecha",  items => { estado.examenes = items; pinta(); }),
     watch("diario",       "fecha",  items => { estado.diario = items; pinta(); }),
+    watch("metricas",     "fecha",  items => { estado.metricas = items; pinta(); }),
   ];
 
   return () => subs.forEach(u => { try { u(); } catch {} });

@@ -77,19 +77,47 @@ async function save() {
   const docPath = rest[0], jsonPath = rest[1];
   if (!docPath || !jsonPath) { console.error("Uso: save <docPath> <archivo.json>"); process.exit(1); }
   const data = JSON.parse(await readFile(jsonPath, "utf8"));
-  const valores = (data.valores || []).map(v => ({
-    nombre: v.nombre ?? "", valor: v.valor ?? null, unidad: v.unidad ?? "",
-    ref: v.ref ?? "", refMin: v.refMin ?? null, refMax: v.refMax ?? null,
-    fuera: v.fuera ?? null,
+
+  const parts = docPath.split("/");          // users/{uid}/examenes/{id}
+  const uid = parts[1], examenId = parts[3];
+  const fecha = data.fecha || null;          // FECHA REAL del laboratorio (del PDF)
+  const fuente = data.fuente ?? "";
+
+  // Lista de métricas que vienen del PDF ya partido.
+  const metricas = (data.metricas || data.valores || []).map(m => ({
+    nombre: m.nombre ?? "", categoria: m.categoria ?? "Otros",
+    valor: m.valor ?? null, unidad: m.unidad ?? "",
+    ref: m.ref ?? "", refMin: m.refMin ?? null, refMax: m.refMax ?? null,
+    fuera: m.fuera ?? null,
   }));
-  await dbf.doc(docPath).set({
+
+  // 1) Actualiza el documento del examen (resumen, fecha real, copia de valores).
+  const examUpdate = {
     estado: "revisado",
     resumen: data.resumen ?? "",
     comparacion: data.comparacion ?? "",
-    valores,
+    valores: metricas,                       // copia para el detalle del examen
+    fuente,
     revisadoEl: admin.firestore.FieldValue.serverTimestamp(),
-  }, { merge: true });
-  console.log("OK: " + docPath + " marcado como revisado.");
+  };
+  if (data.titulo) examUpdate.titulo = data.titulo;
+  if (data.tipo) examUpdate.tipo = data.tipo;
+  if (fecha) examUpdate.fecha = fecha;        // corrige a la fecha real del examen
+  await dbf.doc(docPath).set(examUpdate, { merge: true });
+
+  // 2) Catálogo de indicadores: una lectura fechada por métrica.
+  //    Idempotente: borra las de este examen y reinserta.
+  const mcol = dbf.collection(`users/${uid}/metricas`);
+  const prev = await mcol.where("examenId", "==", examenId).get();
+  const batch = dbf.batch();
+  prev.forEach(d => batch.delete(d.ref));
+  metricas.forEach(m => batch.set(mcol.doc(), {
+    ...m, examenId, fecha, fuente,
+    creado: admin.firestore.FieldValue.serverTimestamp(),
+  }));
+  await batch.commit();
+
+  console.log(`OK: ${examenId} revisado · ${metricas.length} indicadores guardados (fecha ${fecha || "s/f"}).`);
 }
 
 const cmds = { list, pull, save };

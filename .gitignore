@@ -1,0 +1,8 @@
+# Secreto — NUNCA subir
+tools/serviceAccount.json
+tools/_review/
+tools/node_modules/
+
+# Sistema
+.DS_Store
+*.log

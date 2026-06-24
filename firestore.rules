@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Solo el dueño autenticado puede leer/escribir sus propios datos.
+    // Cambia el correo si alguna vez usas otra cuenta.
+    function esDueno(uid) {
+      return request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.email == 'juank4835@gmail.com';
+    }
+
+    match /users/{uid}/{coleccion}/{doc} {
+      allow read, write: if esDueno(uid);
+    }
+  }
+}

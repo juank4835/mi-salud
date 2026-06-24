@@ -1,0 +1,10 @@
+{
+  "name": "mi-salud-tools",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Puente local para revisar exámenes de Mi Salud con Claude.",
+  "dependencies": {
+    "firebase-admin": "^12.3.0"
+  }
+}

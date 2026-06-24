@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Solo el dueño autenticado accede a sus propios archivos.
+    match /users/{uid}/{allPaths=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == uid
+        && request.auth.token.email == 'juank4835@gmail.com';
+    }
+  }
+}

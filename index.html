@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Mi Salud</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon.svg" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mi Salud" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Pantalla de login -->
+  <div id="login" class="login hidden">
+    <div class="login__card">
+      <div class="login__logo">+</div>
+      <h1>Mi Salud</h1>
+      <p>Tu historia clínica personal, privada y siempre contigo.</p>
+      <button id="btn-login" class="btn btn--primary">Entrar con Google</button>
+      <p id="login-error" class="login__error"></p>
+    </div>
+  </div>
+
+  <!-- Aplicación -->
+  <div id="shell" class="shell hidden">
+    <header class="topbar">
+      <h1 id="topbar-title" class="topbar__title">Inicio</h1>
+      <button id="btn-logout" class="topbar__action" title="Cerrar sesión" aria-label="Cerrar sesión">Salir</button>
+    </header>
+
+    <main id="app" class="app"></main>
+
+    <nav class="tabbar">
+      <a href="#/inicio"      class="tab" data-tab="inicio">      <span class="tab__icon">⌂</span><span class="tab__label">Inicio</span></a>
+      <a href="#/medicamentos" class="tab" data-tab="medicamentos"><span class="tab__icon">℞</span><span class="tab__label">Medicinas</span></a>
+      <a href="#/citas"       class="tab" data-tab="citas">       <span class="tab__icon">◷</span><span class="tab__label">Citas</span></a>
+      <a href="#/examenes"    class="tab" data-tab="examenes">    <span class="tab__icon">∿</span><span class="tab__label">Exámenes</span></a>
+      <a href="#/diario"      class="tab" data-tab="diario">      <span class="tab__icon">✎</span><span class="tab__label">Diario</span></a>
+    </nav>
+  </div>
+
+  <!-- Contenedor de modales -->
+  <div id="modal-root"></div>
+
+  <!-- Carga inicial -->
+  <div id="splash" class="splash">
+    <div class="splash__logo">+</div>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

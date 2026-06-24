@@ -27,9 +27,12 @@
   --text-dim:   #7c8aa0;
 
   /* Semánticos */
-  --ok:     #34d399;
-  --warn:   #fbbf24;
-  --danger: #f87171;
+  --ok:         #3a9e72;
+  --ok-ink:     #2c7a55;
+  --warn:       #d59b3e;
+  --warn-ink:   #8a5d12;
+  --danger:     #cf6a55;
+  --danger-ink: #9c4a3a;
   --info:   #38bdf8;
 
   /* Radios */
@@ -209,9 +212,9 @@ html, body {
   padding: 3px 9px; border-radius: 999px; letter-spacing: .01em;
   background: var(--card-2); color: var(--text-dim);
 }
-.pill--ok    { background: color-mix(in srgb, var(--ok) 16%, transparent);    color: var(--ok); }
-.pill--warn  { background: color-mix(in srgb, var(--warn) 18%, transparent);  color: var(--warn); }
-.pill--danger{ background: color-mix(in srgb, var(--danger) 16%, transparent);color: var(--danger); }
+.pill--ok    { background: color-mix(in srgb, var(--ok) 18%, transparent);    color: var(--ok-ink); }
+.pill--warn  { background: color-mix(in srgb, var(--warn) 22%, transparent);  color: var(--warn-ink); }
+.pill--danger{ background: color-mix(in srgb, var(--danger) 20%, transparent);color: var(--danger-ink); }
 
 /* ---------- Empty ---------- */
 .empty { text-align: center; color: var(--text-dim); padding: 48px 20px; display: grid; gap: 8px; justify-items: center; }
@@ -366,8 +369,8 @@ html, body {
 .area__chev { color: var(--text-dim); font-size: 22px; line-height: 1; }
 .area__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border-soft); }
 .chip { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: var(--r-xs); background: var(--card-2); color: var(--text-dim); }
-.chip--bad { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
-.chip--warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.chip--bad { background: color-mix(in srgb, var(--danger) 18%, transparent); color: var(--danger-ink); }
+.chip--warn { background: color-mix(in srgb, var(--warn) 22%, transparent); color: var(--warn-ink); }
 .metric-val { font-weight: 800; font-variant-numeric: tabular-nums; font-size: 15px; letter-spacing: -0.02em; }
 .trend { font-size: 12px; color: var(--text-dim); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .trend--up::before   { content: "↑ "; }

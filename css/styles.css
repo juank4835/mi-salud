@@ -124,7 +124,7 @@ html, body {
 .topbar {
   position: sticky; top: 0; z-index: 20;
   height: calc(var(--topbar-h) + var(--safe-top));
-  padding: var(--safe-top) 18px 0;
+  padding: var(--safe-top) max(18px, calc((100% - var(--maxw)) / 2)) 0;
   display: flex; align-items: center; justify-content: space-between;
   background: color-mix(in srgb, var(--bg) 72%, transparent);
   backdrop-filter: saturate(180%) blur(16px);
@@ -146,6 +146,8 @@ html, body {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
   height: calc(var(--tabbar-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
+  padding-left: max(0px, calc((100% - var(--maxw)) / 2));
+  padding-right: max(0px, calc((100% - var(--maxw)) / 2));
   display: grid; grid-template-columns: repeat(5, 1fr);
   background: color-mix(in srgb, var(--bg) 80%, transparent);
   backdrop-filter: saturate(180%) blur(16px);
@@ -240,7 +242,7 @@ html, body {
 .btn--ghost   { background: transparent; }
 
 .fab {
-  position: fixed; right: 18px;
+  position: fixed; right: max(18px, calc((100% - var(--maxw)) / 2 + 18px));
   bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 18px);
   width: 58px; height: 58px; border-radius: 50%;
   background: linear-gradient(150deg, var(--brand) 0%, var(--primary-d) 100%);

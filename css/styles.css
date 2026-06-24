@@ -53,8 +53,8 @@
   --ease: cubic-bezier(.22,.61,.36,1);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
+/* Tema CLARO fijo (preferencia del usuario): ignora el modo oscuro del sistema. */
+:root {
     --bg:         #eef2f7;
     --bg-grad:    radial-gradient(1200px 600px at 50% -10%, #ffffff 0%, #eef2f7 55%);
     --surface:    #ffffff;
@@ -70,7 +70,6 @@
     --sh-sm: 0 1px 2px rgba(15,27,45,.06);
     --sh:    0 10px 30px -12px rgba(15,27,45,.18);
     --sh-lg: 0 24px 60px -16px rgba(15,27,45,.22);
-  }
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

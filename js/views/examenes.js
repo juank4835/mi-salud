@@ -283,7 +283,9 @@ function filaMetrica(nombre, lecturas) {
   </div>`;
 }
 
-function pintarIndicadores(cont, metricas, docs = []) {
+const esFuera = u => u && (u.fuera === "alto" || u.fuera === "bajo");
+
+function pintarIndicadores(cont, metricas, docs, areaAbierta, setArea) {
   const docsById = {};
   docs.forEach(d => { docsById[d.id] = d; });
   if (!metricas.length) {
@@ -291,13 +293,9 @@ function pintarIndicadores(cont, metricas, docs = []) {
       "Sube un examen en la pestaña Documentos y pídeme que lo revise. Aquí aparecerán tus métricas organizadas.");
     return;
   }
-  const fueraTotal = (() => {
-    const por = agrupar(metricas); let n = 0;
-    Object.values(por).forEach(arr => { const u = arr[arr.length - 1]; if (u.fuera === "alto" || u.fuera === "bajo") n++; });
-    return n;
-  })();
+  const todas = agrupar(metricas);
 
-  // Agrupa por categoría → por nombre.
+  // Agrupa por categoría.
   const porCat = {};
   metricas.forEach(m => { (porCat[m.categoria || "Otros"] = porCat[m.categoria || "Otros"] || []).push(m); });
   const cats = Object.keys(porCat).sort((a, b) => {
@@ -305,26 +303,59 @@ function pintarIndicadores(cont, metricas, docs = []) {
     return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
   });
 
+  // ---------- Nivel 2: un área abierta ----------
+  if (areaAbierta && porCat[areaAbierta]) {
+    const por = agrupar(porCat[areaAbierta]);
+    const nombres = Object.keys(por).sort();
+    cont.innerHTML = `
+      <button class="btn btn--ghost" id="volver" style="margin-bottom:14px">‹ Todas las áreas</button>
+      <div class="section__head" style="margin-bottom:10px"><h2>${esc(areaAbierta)}</h2>
+        <span class="section__count" style="color:var(--text-dim)">${nombres.length} indicador${nombres.length > 1 ? "es" : ""}</span></div>
+      <div class="list">${nombres.map(n => filaMetrica(n, por[n])).join("")}</div>`;
+    cont.querySelector("#volver").onclick = () => setArea(null);
+    cont.querySelectorAll(".row[data-met]").forEach(r =>
+      r.onclick = () => modalMetrica(r.dataset.met, todas[r.dataset.met], docsById));
+    return;
+  }
+
+  // ---------- Nivel 1: tablero de áreas ----------
+  const fueraTotal = Object.values(todas).filter(arr => esFuera(arr[arr.length - 1])).length;
   let html = fueraTotal
     ? `<div class="banner banner--bad"><span class="banner__dot"></span><div>
          <strong>${fueraTotal} indicador${fueraTotal > 1 ? "es" : ""} fuera de rango</strong>
-         <div class="muted">Según la lectura más reciente de cada uno.</div></div></div>`
+         <div class="muted">Toca un área para ver el detalle.</div></div></div>`
     : `<div class="banner banner--good"><span class="banner__dot"></span><div>
          <strong>Todo dentro de rango</strong>
          <div class="muted">En la lectura más reciente de cada indicador.</div></div></div>`;
 
   cats.forEach(cat => {
     const por = agrupar(porCat[cat]);
-    const nombres = Object.keys(por).sort();
-    html += `<div class="cat-title">${esc(cat)}</div><div class="list">`;
-    html += nombres.map(n => filaMetrica(n, por[n])).join("");
-    html += `</div>`;
+    const nombres = Object.keys(por);
+    const ultimaFecha = porCat[cat].reduce((mx, m) => ((m.fecha || "") > mx ? m.fecha : mx), "");
+    const fueraNombres = nombres.filter(n => esFuera(por[n][por[n].length - 1]));
+    const nFuera = fueraNombres.length;
+    const badge = nFuera
+      ? `<span class="pill pill--danger">${nFuera} fuera</span>`
+      : `<span class="pill pill--ok">Normal</span>`;
+    const chips = nFuera
+      ? `<div class="area__chips">${fueraNombres.slice(0, 3).map(n => `<span class="chip chip--bad">${esc(n)}</span>`).join("")}${nFuera > 3 ? `<span class="chip">+${nFuera - 3}</span>` : ""}</div>`
+      : "";
+    html += `<div class="card area" data-cat="${esc(cat)}" style="cursor:pointer">
+      <div class="area__accent ${nFuera ? "accent--danger" : "accent--ok"}"></div>
+      <div style="display:flex;align-items:center;gap:13px">
+        <div class="area__main">
+          <div class="area__name">${esc(cat)}</div>
+          <div class="area__sub">${nombres.length} indicador${nombres.length > 1 ? "es" : ""} · act. ${fmtFecha(ultimaFecha)}</div>
+        </div>
+        ${badge}
+        <span class="area__chev">›</span>
+      </div>
+      ${chips}
+    </div>`;
   });
   cont.innerHTML = html;
-
-  const todas = agrupar(metricas);
-  cont.querySelectorAll(".row[data-met]").forEach(r =>
-    r.onclick = () => modalMetrica(r.dataset.met, todas[r.dataset.met], docsById));
+  cont.querySelectorAll(".area[data-cat]").forEach(c =>
+    c.onclick = () => setArea(c.dataset.cat));
 }
 
 /* ==================== Render ==================== */
@@ -340,10 +371,13 @@ export default function render(app) {
 
   let tab = "indicadores";
   let docs = [], metricas = [];
+  let areaAbierta = null;
   const cont = app.querySelector("#cont");
 
+  const setArea = (cat) => { areaAbierta = cat; pintar(); window.scrollTo(0, 0); };
+
   function pintar() {
-    if (tab === "indicadores") pintarIndicadores(cont, metricas, docs);
+    if (tab === "indicadores") pintarIndicadores(cont, metricas, docs, areaAbierta, setArea);
     else {
       if (!docs.length) { cont.innerHTML = vacio("∿", "Sin documentos", "Toca + para subir tu primer examen (PDF o foto)."); return; }
       cont.innerHTML = `<div class="list">${docs.map(filaDoc).join("")}</div>`;
@@ -353,6 +387,7 @@ export default function render(app) {
 
   app.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
     tab = b.dataset.tab;
+    areaAbierta = null;
     app.querySelectorAll(".seg button").forEach(x => x.classList.toggle("is-active", x === b));
     pintar();
   });

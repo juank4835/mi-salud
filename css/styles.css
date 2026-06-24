@@ -346,6 +346,21 @@ html, body {
   color: var(--text-dim); font-weight: 700; margin: 22px 4px 9px;
 }
 .cat-title:first-child { margin-top: 4px; }
+
+/* Tarjetas de área (tablero) */
+.area {
+  position: relative; padding: 16px 16px 16px 20px; margin-bottom: 10px;
+  transition: transform .12s var(--ease), border-color .15s;
+}
+.area:active { transform: scale(.99); }
+.area__accent { position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; }
+.area__main { flex: 1; min-width: 0; }
+.area__name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.area__sub { color: var(--text-dim); font-size: 13px; margin-top: 2px; }
+.area__chev { color: var(--text-dim); font-size: 22px; line-height: 1; }
+.area__chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--border-soft); }
+.chip { font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: var(--r-xs); background: var(--card-2); color: var(--text-dim); }
+.chip--bad { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
 .metric-val { font-weight: 800; font-variant-numeric: tabular-nums; font-size: 15px; letter-spacing: -0.02em; }
 .trend { font-size: 12px; color: var(--text-dim); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .trend--up::before   { content: "↑ "; }

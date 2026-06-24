@@ -1,7 +1,7 @@
 // ===========================================================
 //  Service Worker — caché del esqueleto para uso offline
 // ===========================================================
-const CACHE = "mi-salud-v5";
+const CACHE = "mi-salud-v6";
 const ASSETS = [
   ".",
   "index.html",
@@ -36,18 +36,17 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  // Solo cacheamos peticiones propias (mismo origen). Firebase pasa directo a la red.
+  // Solo manejamos peticiones propias (mismo origen). Firebase pasa directo a la red.
   if (url.origin !== location.origin) return;
   if (e.request.method !== "GET") return;
 
+  // RED PRIMERO: con internet siempre traemos lo último (y refrescamos caché).
+  // Sin internet, caemos a la copia guardada. Así la app no se queda "vieja".
   e.respondWith(
-    caches.match(e.request).then(hit => {
-      if (hit) return hit;
-      return fetch(e.request).then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-        return res;
-      }).catch(() => caches.match("index.html"));
-    })
+    fetch(e.request).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+      return res;
+    }).catch(() => caches.match(e.request).then(hit => hit || caches.match("index.html")))
   );
 });

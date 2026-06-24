@@ -17,6 +17,9 @@ Esto permite que **Claude** (corriendo en tu Mac) baje, lea y analice los exáme
 Cuando me digas *"revisa mis exámenes"* o *"revisa el perfil lipídico"*, yo corro:
 
 ```bash
+# 0. (Opcional) Subir un PDF que está en el Mac, sin pasar por la app
+node revisar.mjs upload <archivo.pdf> <uid> "Título" 2025-07-21 "Tipo"   # imprime el docPath
+
 # 1. Ver qué hay pendiente
 node revisar.mjs list
 

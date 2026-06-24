@@ -27,6 +27,7 @@ import { readFile } from "node:fs/promises";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname, join, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
 import admin from "firebase-admin";
 import { firebaseConfig } from "../js/firebase-config.js";
 
@@ -121,9 +122,38 @@ async function save() {
   console.log(`OK: ${examenId} revisado · ${metricas.length} indicadores guardados (fecha ${fecha || "s/f"}).`);
 }
 
-const cmds = { list, pull, save };
+// Sube un archivo local a Storage y crea el examen (estado pendiente).
+// Imprime el docPath para luego revisarlo con `save`.
+async function upload() {
+  const localFile = rest[0], uid = rest[1];
+  if (!localFile || !uid) { console.error("Uso: upload <archivoLocal> <uid> [titulo] [fecha] [tipo]"); process.exit(1); }
+  if (!existsSync(localFile)) { console.error("No existe: " + localFile); process.exit(1); }
+  const titulo = rest[2] || basename(localFile);
+  const fecha = rest[3] || new Date().toISOString().slice(0, 10);
+  const tipo = rest[4] || "Laboratorio";
+  const ext = (basename(localFile).match(/\.[^.]+$/) || [""])[0].toLowerCase();
+  const ctype = ext === ".pdf" ? "application/pdf" : ext === ".png" ? "image/png"
+    : (ext === ".jpg" || ext === ".jpeg") ? "image/jpeg" : "application/octet-stream";
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const safe = basename(localFile).normalize("NFD").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+  const storagePath = `users/${uid}/examenes/${ts}-${safe}`;
+  const token = randomUUID();
+  await admin.storage().bucket().upload(localFile, {
+    destination: storagePath,
+    metadata: { contentType: ctype, metadata: { firebaseStorageDownloadTokens: token } },
+  });
+  const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(storagePath)}?alt=media&token=${token}`;
+  const ref = await dbf.collection(`users/${uid}/examenes`).add({
+    titulo, fecha, tipo, estado: "pendiente",
+    storagePath, downloadURL, contentType: ctype, nombreArchivo: `${ts}-${safe}`,
+    creado: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  console.log(ref.path);
+}
+
+const cmds = { list, pull, save, upload };
 if (!cmds[cmd]) {
-  console.error("Comandos: list [--all] | pull <storagePath> [dir] | save <docPath> <json>");
+  console.error("Comandos: list [--all] | pull <storagePath> [dir] | save <docPath> <json> | upload <archivo> <uid> [titulo] [fecha] [tipo]");
   process.exit(1);
 }
 await cmds[cmd]().catch(e => { console.error(e.message || e); process.exit(1); });

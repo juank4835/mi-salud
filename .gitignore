@@ -3,6 +3,9 @@ tools/serviceAccount.json
 tools/_review/
 tools/node_modules/
 
+# Herramienta de diseño (no se publica)
+design-preview.html
+
 # Sistema
 .DS_Store
 *.log

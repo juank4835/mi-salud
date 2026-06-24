@@ -262,12 +262,12 @@ function pintarIndicadores(cont, metricas, docs = []) {
   });
 
   let html = fueraTotal
-    ? `<div class="card" style="border-color:var(--danger);margin-bottom:14px">
-         <strong style="color:var(--danger)">${fueraTotal} indicador${fueraTotal > 1 ? "es" : ""} fuera de rango</strong>
-         <div class="muted" style="font-size:13px;margin-top:2px">Según la lectura más reciente de cada uno.</div></div>`
-    : `<div class="card" style="border-color:var(--ok);margin-bottom:14px">
-         <strong style="color:var(--ok)">Todo dentro de rango</strong>
-         <div class="muted" style="font-size:13px;margin-top:2px">En la lectura más reciente de cada indicador.</div></div>`;
+    ? `<div class="banner banner--bad"><span class="banner__dot"></span><div>
+         <strong>${fueraTotal} indicador${fueraTotal > 1 ? "es" : ""} fuera de rango</strong>
+         <div class="muted">Según la lectura más reciente de cada uno.</div></div></div>`
+    : `<div class="banner banner--good"><span class="banner__dot"></span><div>
+         <strong>Todo dentro de rango</strong>
+         <div class="muted">En la lectura más reciente de cada indicador.</div></div></div>`;
 
   cats.forEach(cat => {
     const por = agrupar(porCat[cat]);

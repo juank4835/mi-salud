@@ -13,7 +13,7 @@ import { esc, toast, vacio, hoyISO, fmtFecha, $ } from "../ui.js";
 const COL_DOC = "examenes";
 const COL_MET = "metricas";
 const TIPOS = ["Laboratorio", "Imagen diagnóstica", "Otro"];
-const ORDEN_CAT = ["Presión arterial", "Función renal", "Metabólico / Glucosa", "Lípidos",
+const ORDEN_CAT = ["Presión arterial", "Sueño", "Función renal", "Metabólico / Glucosa", "Lípidos",
   "Tiroides", "Hematología", "Hígado", "Vitaminas y minerales", "Hormonal", "Audición",
   "Antropometría", "Otros"];
 

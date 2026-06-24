@@ -1,7 +1,7 @@
 // ===========================================================
 //  Service Worker — caché del esqueleto para uso offline
 // ===========================================================
-const CACHE = "mi-salud-v8";
+const CACHE = "mi-salud-v9";
 const ASSETS = [
   ".",
   "index.html",

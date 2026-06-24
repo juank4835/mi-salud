@@ -213,6 +213,44 @@ async function dibujar(canvas, lecturas) {
   });
 }
 
+// Barra de rango: zona verde = normal, marca = tu valor.
+// Soporta rango de dos lados (min–max) o de un solo lado (< max  /  > min).
+function gauge(ult) {
+  const v = Number(ult.valor);
+  if (!isFinite(v)) return "";
+  const lo = (ult.refMin === 0 || ult.refMin) ? Number(ult.refMin) : null;
+  const hi = (ult.refMax === 0 || ult.refMax) ? Number(ult.refMax) : null;
+  if (lo === null && hi === null) return "";
+
+  let sLo, sHi, bandLo, bandHi;
+  if (lo !== null && hi !== null) {                 // min – max
+    const span = (hi - lo) || Math.abs(hi) || 1, m = span * 0.6;
+    bandLo = lo; bandHi = hi;
+    sLo = Math.min(lo - m, v); sHi = Math.max(hi + m, v);
+  } else if (hi !== null) {                          // < max
+    const m = (Math.abs(hi) || 1) * 0.35;
+    bandLo = Math.min(0, v); bandHi = hi;
+    sLo = Math.min(bandLo, v - m * 0.2); sHi = Math.max(hi + m, v);
+  } else {                                           // > min
+    const m = (Math.abs(lo) || 1) * 0.4;
+    bandLo = lo; sLo = Math.min(lo - m, v); sHi = Math.max(lo + m, v); bandHi = sHi;
+  }
+  const span2 = (sHi - sLo) || 1;
+  const pct = x => Math.max(0, Math.min(100, ((x - sLo) / span2) * 100));
+  const fuera = ult.fuera === "alto" || ult.fuera === "bajo";
+  const bandL = pct(bandLo), bandW = pct(bandHi) - pct(bandLo), mk = pct(v);
+  const markCol = fuera ? "var(--danger)" : "var(--text-2)";
+
+  return `<div style="position:relative;height:34px;width:100%">
+    <div style="position:absolute;top:13px;left:0;right:0;height:7px;border-radius:999px;background:var(--card-2)">
+      <div style="position:absolute;top:0;bottom:0;left:${bandL}%;width:${bandW}%;background:color-mix(in srgb,var(--ok) 30%,transparent);border-radius:999px"></div>
+      <div style="position:absolute;top:-3px;left:${mk}%;transform:translateX(-50%);width:4px;height:13px;border-radius:2px;background:${markCol}"></div>
+    </div>
+    ${lo !== null ? `<div style="position:absolute;top:23px;left:${pct(lo)}%;transform:translateX(-50%);font-size:11px;color:var(--text-dim)">${lo}</div>` : ""}
+    ${hi !== null ? `<div style="position:absolute;top:23px;left:${pct(hi)}%;transform:translateX(-50%);font-size:11px;color:var(--text-dim)">${hi}</div>` : ""}
+  </div>`;
+}
+
 function filaMetrica(nombre, lecturas) {
   const ult = lecturas[lecturas.length - 1];
   const prev = lecturas.length >= 2 ? lecturas[lecturas.length - 2] : null;
@@ -226,16 +264,19 @@ function filaMetrica(nombre, lecturas) {
   }
   const pill = fuera ? `<span class="pill pill--danger">${ult.fuera === "alto" ? "Alto" : "Bajo"}</span>`
     : `<span class="pill pill--ok">Normal</span>`;
-  return `<div class="row" data-met="${esc(nombre)}" style="cursor:pointer">
+  return `<div class="row" data-met="${esc(nombre)}" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:8px">
     <div class="row__accent ${fuera ? "accent--danger" : "accent--ok"}"></div>
-    <div class="row__main">
-      <div class="row__title">${esc(nombre)}</div>
-      <div class="row__sub">${fmtFecha(ult.fecha)}${lecturas.length > 1 ? ` · ${lecturas.length} registros` : ""}</div>
+    <div style="display:flex;align-items:flex-start;gap:13px">
+      <div class="row__main">
+        <div class="row__title">${esc(nombre)}</div>
+        <div class="row__sub">${fmtFecha(ult.fecha)}${lecturas.length > 1 ? ` · ${lecturas.length} registros` : ""}</div>
+      </div>
+      <div class="row__meta">
+        <div><span class="metric-val">${esc(String(ult.valor))}</span> <span class="muted">${esc(ult.unidad || "")}</span></div>
+        ${trend} ${pill}
+      </div>
     </div>
-    <div class="row__meta">
-      <div><span class="metric-val">${esc(String(ult.valor))}</span> <span class="muted">${esc(ult.unidad || "")}</span></div>
-      ${trend} ${pill}
-    </div>
+    ${gauge(ult)}
   </div>`;
 }
 

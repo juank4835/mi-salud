@@ -44,8 +44,9 @@ Claude parte el PDF en sus métricas individuales. Cada una lleva **categoría**
   "resumen": "Texto claro de qué dice el examen.",
   "comparacion": "Qué subió/bajó vs el examen anterior del mismo tipo.",
   "metricas": [
-    { "nombre": "Creatinina", "categoria": "Función renal", "valor": 1.20, "unidad": "mg/dL", "ref": "0.73 - 1.18", "refMin": 0.73, "refMax": 1.18, "fuera": "alto" },
-    { "nombre": "Glicemia en ayunas", "categoria": "Metabólico / Glucosa", "valor": 84, "unidad": "mg/dL", "ref": "70 - 100", "refMin": 70, "refMax": 100, "fuera": null }
+    { "nombre": "Creatinina", "categoria": "Función renal", "valor": 1.20, "unidad": "mg/dL", "ref": "0.73 - 1.18", "refMin": 0.73, "refMax": 1.18, "fuera": "alto",
+      "analisis": "Qué es la métrica, qué significa este valor y la tendencia. Se muestra en el detalle del indicador." },
+    { "nombre": "Glicemia en ayunas", "categoria": "Metabólico / Glucosa", "valor": 84, "unidad": "mg/dL", "ref": "70 - 100", "refMin": 70, "refMax": 100, "fuera": null, "analisis": "..." }
   ]
 }
 ```

@@ -173,7 +173,9 @@ function modalMetrica(nombre, lecturas, docsById = {}) {
         <div class="modal__head"><h2>${esc(nombre)}</h2>
           <button class="modal__close" id="m-close" aria-label="Cerrar">×</button></div>
         <div class="muted" style="margin-bottom:12px">${esc(ult.categoria || "")}${ult.ref ? ` · rango normal: ${esc(ult.ref)}` : ""}</div>
-        ${lecturas.length >= 2 ? `<div class="card"><div class="chart-wrap"><canvas id="m-chart"></canvas></div></div>` : ""}
+        ${gauge(ult)}
+        ${ult.analisis ? `<div class="card" style="margin:12px 0 0"><strong>Qué significa</strong><p style="margin:7px 0 0">${esc(ult.analisis)}</p></div>` : ""}
+        ${lecturas.length >= 2 ? `<div class="card mt"><div class="chart-wrap"><canvas id="m-chart"></canvas></div></div>` : ""}
         <table class="readings mt"><tbody>${filas}</tbody></table>
         ${hayLinks ? `<p class="muted center" style="font-size:12px;margin-top:10px">Toca una fila para ver el examen de donde salió.</p>` : ""}
         <p class="muted center" style="font-size:12px;margin-top:6px">Informativo, no diagnóstico.</p>

@@ -89,6 +89,7 @@ async function save() {
     valor: m.valor ?? null, unidad: m.unidad ?? "",
     ref: m.ref ?? "", refMin: m.refMin ?? null, refMax: m.refMax ?? null,
     fuera: m.fuera ?? null,
+    analisis: m.analisis ?? "",          // explicación individual de la métrica
   }));
 
   // 1) Actualiza el documento del examen (resumen, fecha real, copia de valores).

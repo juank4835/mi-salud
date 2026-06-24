@@ -17,6 +17,22 @@ const ORDEN_CAT = ["Presión arterial", "Sueño", "Función renal", "Metabólico
   "Tiroides", "Hematología", "Hígado", "Vitaminas y minerales", "Hormonal", "Audición",
   "Antropometría", "Otros"];
 
+// Íconos de línea por categoría (sin emojis). Default: frasco de laboratorio.
+const ICO = {
+  "Presión arterial":       '<path d="M12 20.3 4.5 12.8a4.6 4.6 0 0 1 6.5-6.5l1 1 1-1a4.6 4.6 0 0 1 6.5 6.5Z"/>',
+  "Sueño":                  '<path d="M20 13.4A8 8 0 1 1 10.6 4a6.3 6.3 0 0 0 9.4 9.4Z"/>',
+  "Función renal":          '<path d="M12 3.3c3.4 3.9 5.4 6.7 5.4 9.4a5.4 5.4 0 0 1-10.8 0c0-2.7 2-5.5 5.4-9.4Z"/>',
+  "Audición":               '<path d="M6.5 9.5a5.5 5.5 0 0 1 11-.2c0 3-2.3 3.8-3.6 5S12 16.2 12 18.2a2.8 2.8 0 0 1-5 1.7"/><path d="M9.3 9.3a2.7 2.7 0 0 1 5-1.4"/>',
+  "Antropometría":          '<circle cx="12" cy="6" r="2.4"/><path d="M12 8.6V16"/><path d="M8 12h8"/><path d="M9 20l3-4 3 4"/>',
+  "Vitaminas y minerales":  '<path d="M10.5 3.8 3.8 10.5a4.6 4.6 0 0 0 6.5 6.5l6.7-6.7a4.6 4.6 0 0 0-6.5-6.5Z"/><path d="M7.2 7.2l6.6 6.6"/>',
+  "Hematología":            '<path d="M12 3.3c3.4 3.9 5.4 6.7 5.4 9.4a5.4 5.4 0 0 1-10.8 0c0-2.7 2-5.5 5.4-9.4Z"/><path d="M9.2 13.2a2.8 2.8 0 0 0 2.8 2.6"/>',
+  "Hormonal":               '<path d="M13 3 5 13h5l-1 8 8-10h-5z"/>',
+};
+const ICO_DEFAULT = '<path d="M9 3h6"/><path d="M10 3v5.4L5.7 16a2 2 0 0 0 1.8 3h9a2 2 0 0 0 1.8-3L14 8.4V3"/><path d="M7.6 13.5h8.8"/>';
+function catIcono(cat) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICO[cat] || ICO_DEFAULT}</svg>`;
+}
+
 let chart = null;
 
 /* ==================== Subir documento ==================== */
@@ -307,10 +323,16 @@ function pintarIndicadores(cont, metricas, docs, areaAbierta, setArea) {
   if (areaAbierta && porCat[areaAbierta]) {
     const por = agrupar(porCat[areaAbierta]);
     const nombres = Object.keys(por).sort();
+    const nFueraArea = nombres.filter(n => esFuera(por[n][por[n].length - 1])).length;
     cont.innerHTML = `
       <button class="btn btn--ghost" id="volver" style="margin-bottom:14px">‹ Todas las áreas</button>
-      <div class="section__head" style="margin-bottom:10px"><h2>${esc(areaAbierta)}</h2>
-        <span class="section__count" style="color:var(--text-dim)">${nombres.length} indicador${nombres.length > 1 ? "es" : ""}</span></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="area__icon area__icon--${nFueraArea ? "bad" : "ok"}">${catIcono(areaAbierta)}</div>
+        <div style="flex:1;min-width:0">
+          <h2 style="margin:0;font-size:19px;letter-spacing:-0.02em">${esc(areaAbierta)}</h2>
+          <div class="muted" style="font-size:13px">${nombres.length} indicador${nombres.length > 1 ? "es" : ""}${nFueraArea ? ` · ${nFueraArea} fuera de rango` : ""}</div>
+        </div>
+      </div>
       <div class="list">${nombres.map(n => filaMetrica(n, por[n])).join("")}</div>`;
     cont.querySelector("#volver").onclick = () => setArea(null);
     cont.querySelectorAll(".row[data-met]").forEach(r =>
@@ -341,8 +363,8 @@ function pintarIndicadores(cont, metricas, docs, areaAbierta, setArea) {
       ? `<div class="area__chips">${fueraNombres.slice(0, 3).map(n => `<span class="chip chip--bad">${esc(n)}</span>`).join("")}${nFuera > 3 ? `<span class="chip">+${nFuera - 3}</span>` : ""}</div>`
       : "";
     html += `<div class="card area" data-cat="${esc(cat)}" style="cursor:pointer">
-      <div class="area__accent ${nFuera ? "accent--danger" : "accent--ok"}"></div>
       <div style="display:flex;align-items:center;gap:13px">
+        <div class="area__icon area__icon--${nFuera ? "bad" : "ok"}">${catIcono(cat)}</div>
         <div class="area__main">
           <div class="area__name">${esc(cat)}</div>
           <div class="area__sub">${nombres.length} indicador${nombres.length > 1 ? "es" : ""} · act. ${fmtFecha(ultimaFecha)}</div>

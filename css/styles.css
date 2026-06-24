@@ -349,11 +349,14 @@ html, body {
 
 /* Tarjetas de área (tablero) */
 .area {
-  position: relative; padding: 16px 16px 16px 20px; margin-bottom: 10px;
+  position: relative; padding: 16px; margin-bottom: 10px;
   transition: transform .12s var(--ease), border-color .15s;
 }
 .area:active { transform: scale(.99); }
-.area__accent { position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 0 4px 4px 0; }
+.area__icon { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; flex: none; }
+.area__icon svg { width: 23px; height: 23px; }
+.area__icon--bad { background: color-mix(in srgb, var(--danger) 13%, transparent); color: var(--danger); }
+.area__icon--ok  { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
 .area__main { flex: 1; min-width: 0; }
 .area__name { font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
 .area__sub { color: var(--text-dim); font-size: 13px; margin-top: 2px; }

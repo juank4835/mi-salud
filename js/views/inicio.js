@@ -68,7 +68,7 @@ function generarResumen(estado) {
   const meds = estado.medicamentos.filter(m => (m.estado || "Activo") === "Activo");
   if (meds.length) {
     L.push("=== MEDICAMENTOS ACTIVOS ===");
-    meds.forEach(m => L.push(`- ${m.nombre}${m.dosis ? ` ${m.dosis}` : ""}${m.frecuencia ? ` · ${m.frecuencia}` : ""}`));
+    meds.forEach(m => L.push(`- ${m.nombre}${m.dosis ? ` ${m.dosis}` : ""}${m.frecuencia ? ` · ${m.frecuencia}` : ""}${m.inicio ? ` · desde ${fmtFecha(m.inicio)}` : ""}`));
     L.push("");
   }
 

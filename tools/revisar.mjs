@@ -152,9 +152,44 @@ async function upload() {
   console.log(ref.path);
 }
 
-const cmds = { list, pull, save, upload };
+// Sube un archivo local a Storage y crea un registro en la sección "Mente"
+// (colección `mental`): ejercicio de ACT con archivo adjunto y reflexión.
+async function mentalup() {
+  const localFile = rest[0], uid = rest[1];
+  if (!localFile || !uid) { console.error("Uso: mentalup <archivoLocal> <uid> <ejercicio> <fecha> <area> [reflexionFile]"); process.exit(1); }
+  if (!existsSync(localFile)) { console.error("No existe: " + localFile); process.exit(1); }
+  const ejercicio = rest[2] || basename(localFile);
+  const fecha = rest[3] || new Date().toISOString().slice(0, 10);
+  const area = rest[4] || "Otro";
+  const reflexion = rest[5] && existsSync(rest[5]) ? await readFile(rest[5], "utf8") : "";
+  const ext = (basename(localFile).match(/\.[^.]+$/) || [""])[0].toLowerCase();
+  const CT = {
+    ".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".doc": "application/msword", ".txt": "text/plain",
+  };
+  const ctype = CT[ext] || "application/octet-stream";
+  const ts = new Date().toISOString().replace(/[:.]/g, "-");
+  const safe = basename(localFile).normalize("NFD").replace(/[^a-zA-Z0-9._-]/g, "_").slice(-80);
+  const storagePath = `users/${uid}/examenes/${ts}-${safe}`;
+  const token = randomUUID();
+  await admin.storage().bucket().upload(localFile, {
+    destination: storagePath,
+    metadata: { contentType: ctype, metadata: { firebaseStorageDownloadTokens: token } },
+  });
+  const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encodeURIComponent(storagePath)}?alt=media&token=${token}`;
+  const ref = await dbf.collection(`users/${uid}/mental`).add({
+    ejercicio, fecha, area, reflexion,
+    storagePath, downloadURL, contentType: ctype, size: (await readFile(localFile)).length,
+    nombreArchivo: `${ts}-${safe}`,
+    creado: admin.firestore.FieldValue.serverTimestamp(),
+  });
+  console.log(ref.path);
+}
+
+const cmds = { list, pull, save, upload, mentalup };
 if (!cmds[cmd]) {
-  console.error("Comandos: list [--all] | pull <storagePath> [dir] | save <docPath> <json> | upload <archivo> <uid> [titulo] [fecha] [tipo]");
+  console.error("Comandos: list [--all] | pull <storagePath> [dir] | save <docPath> <json> | upload <archivo> <uid> [titulo] [fecha] [tipo] | mentalup <archivo> <uid> <ejercicio> <fecha> <area> [reflexionFile]");
   process.exit(1);
 }
 await cmds[cmd]().catch(e => { console.error(e.message || e); process.exit(1); });

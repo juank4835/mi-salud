@@ -1,7 +1,7 @@
 // ===========================================================
 //  Service Worker — caché del esqueleto para uso offline
 // ===========================================================
-const CACHE = "mi-salud-v19";
+const CACHE = "mi-salud-v20";
 const ASSETS = [
   ".",
   "index.html",
@@ -20,6 +20,7 @@ const ASSETS = [
   "js/views/citas.js",
   "js/views/examenes.js",
   "js/views/diario.js",
+  "js/views/mental.js",
 ];
 
 self.addEventListener("install", (e) => {

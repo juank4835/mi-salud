@@ -9,6 +9,7 @@ import medicamentos from "./views/medicamentos.js";
 import citas        from "./views/citas.js";
 import examenes     from "./views/examenes.js";
 import diario       from "./views/diario.js";
+import mente        from "./views/mental.js";
 
 const VISTAS = {
   inicio:       { titulo: "Inicio",       render: inicio },
@@ -16,6 +17,7 @@ const VISTAS = {
   citas:        { titulo: "Citas",        render: citas },
   examenes:     { titulo: "Exámenes",     render: examenes },
   diario:       { titulo: "Diario",       render: diario },
+  mente:        { titulo: "Salud mental", render: mente },
 };
 
 let cleanup = null;   // función para desuscribir listeners de la vista actual

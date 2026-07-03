@@ -18,13 +18,127 @@ function nivelInd(u) {
   return (ex / dn) <= 0.2 ? "leve" : "marcado";
 }
 
+// --- Utilidades para correlacionar en vivo ---
+// Última lectura de cada indicador (por nombre).
+function ultimasPorNombre(estado) {
+  const m = {};
+  estado.metricas.forEach(x => { const c = m[x.nombre]; if (!c || (x.fecha || "") > (c.fecha || "")) m[x.nombre] = x; });
+  return m;
+}
+// Busca el primer indicador cuyo nombre contenga alguno de los textos dados.
+function buscarInd(U, ...subs) {
+  const k = Object.keys(U).find(n => subs.some(s => n.toLowerCase().includes(s.toLowerCase())));
+  return k ? U[k] : null;
+}
+// ¿Existe un examen cuyo título contenga alguno de los textos?
+function hayExamen(estado, ...subs) {
+  return estado.examenes.some(e => subs.some(s => (e.titulo || "").toLowerCase().includes(s.toLowerCase())));
+}
+const val = (m) => m ? `${m.valor}${m.unidad ? ` ${m.unidad}` : ""}` : "";
+
+// Correlaciones cruzadas: cada línea solo se emite si sus datos están presentes,
+// así el resumen refleja siempre el estado actual (no es texto fijo).
+function correlaciones(estado) {
+  const U = ultimasPorNombre(estado);
+  const out = [];
+  const a1c   = buscarInd(U, "glicosilada", "hba1c");
+  const apnea = hayExamen(estado, "polisomnog", "apnea", "cpap");
+  const mapa  = hayExamen(estado, "mapa", "presión arterial", "presion arterial");
+  const malb  = buscarInd(U, "microalbumin");
+  const vcm   = buscarInd(U, "corpuscular medio", "vcm");
+  const rdw   = buscarInd(U, "distribución eritroide", "rdw");
+  const ferr  = buscarInd(U, "ferritina");
+  const fe    = buscarInd(U, "hierro sérico", "hierro serico");
+  const d25   = buscarInd(U, "25-oh", "(25");
+  const dact  = buscarInd(U, "activa", "1,25", "1.25");
+  const b12   = buscarInd(U, "b12", "cobalamina");
+  const fol   = buscarInd(U, "fólico", "folato");
+  const homo  = buscarInd(U, "homociste");
+  const aTg   = buscarInd(U, "tiroglobulina");
+  const aTPO  = buscarInd(U, "tpo");
+  const tsh   = buscarInd(U, "tsh", "tiroestimulante");
+  const colT  = buscarInd(U, "colesterol total");
+  const ldl   = buscarInd(U, "colesterol ldl");
+  const nohdl = buscarInd(U, "no-hdl", "no hdl");
+  const hdl   = buscarInd(U, "colesterol hdl");
+  const tg    = buscarInd(U, "triglic");
+
+  if (apnea || (a1c && nivelInd(a1c) !== "normal")) {
+    const partes = [];
+    if (apnea) partes.push("apnea del sueño documentada en polisomnograma");
+    if (a1c && nivelInd(a1c) !== "normal") partes.push(`HbA1c ${a1c.valor}% (rango prediabético)`);
+    out.push(`• Eje sueño–metabolismo–peso: ${partes.join(" + ")}. La apnea no tratada empuja la resistencia a la insulina, la presión y el peso; el peso es la palanca común que conecta apnea, prediabetes, lípidos y presión. Prioridad práctica: adherencia al CPAP y reducción de peso.`);
+  }
+  if (malb && (malb.fuera === "alto" || malb.fuera === "bajo")) {
+    out.push(`• Riñón–presión: microalbuminuria ${val(malb)} (elevada)${mapa ? ", junto con el MAPA de presión de 24h" : ""}. Es un marcador renal y cardiovascular temprano; conviene repetirla (elevada en 2 de 3 muestras en 3–6 meses) para confirmar si es persistente o fue transitoria. Encaja con la prediabetes y la presión.`);
+  }
+  if (vcm && vcm.fuera === "bajo" && rdw && nivelInd(rdw) === "normal" && (!ferr || !ferr.fuera) && (!fe || !fe.fuera)) {
+    out.push(`• Serie roja: VCM bajo (${vcm.valor}) con RDW normal (${rdw.valor}) y hierro/ferritina normales → orienta más a un rasgo talasémico que a falta de hierro. Se confirma con electroforesis de hemoglobina si el médico lo considera.`);
+  }
+  if (d25 && dact) {
+    out.push(`• Vitamina D: reserva 25-OH ${val(d25)} (${d25.fuera ? "insuficiente" : "normal"}) con la forma activa 1,25 ${val(dact)} (normal). Para decidir suplementación se usa la 25-OH, no la activa.`);
+  }
+  if ((aTg && aTg.fuera) || (aTPO && aTPO.fuera)) {
+    const ac = aTg && aTg.fuera ? `anti-tiroglobulina ${aTg.valor}` : `anti-TPO ${aTPO.valor}`;
+    out.push(`• Tiroides: anticuerpos antitiroideos elevados (${ac})${tsh && !tsh.fuera ? ` con TSH normal (${tsh.valor})` : ""} → autoinmunidad tiroidea sin disfunción actual; conviene vigilar la TSH en el tiempo.`);
+  }
+  if (b12 && fol && homo && !b12.fuera && !fol.fuera && !homo.fuera) {
+    out.push(`• B12 / folato: B12 ${b12.valor}, folato ${fol.valor} y homocisteína ${homo.valor}, todos normales → este frente está en orden.`);
+  }
+  if ((colT && colT.fuera === "alto") || (ldl && ldl.fuera === "alto") || (nohdl && nohdl.fuera === "alto")) {
+    const altos = [colT && colT.fuera === "alto" && `colesterol total ${colT.valor}`, ldl && ldl.fuera === "alto" && `LDL ${ldl.valor}`, nohdl && nohdl.fuera === "alto" && `No-HDL ${nohdl.valor}`].filter(Boolean);
+    let l = `• Lípidos: ${altos.join(", ")} por encima de meta`;
+    if (hdl && !hdl.fuera) l += `, con HDL bueno (${hdl.valor})`;
+    if (tg && !tg.fuera) l += ` y triglicéridos normales (${tg.valor})`;
+    out.push(l + ". El manejo se define por el riesgo cardiovascular global (peso, presión, glucosa), no por un solo número.");
+  }
+  if (hayExamen(estado, "audiometr")) {
+    out.push(`• Otorrino: tinnitus con audiometría${hayExamen(estado, "senos") ? " y TAC de senos sin causa estructural" : ""}. Pendiente valoración por otorrino, que además cubre el posible componente nasal de la apnea.`);
+  }
+  return out;
+}
+
 // Arma el resumen completo (texto) a partir de los datos en vivo.
 // Siempre actualizado: se genera en el momento de tocar el botón.
 function generarResumen(estado) {
   const L = [];
   L.push(`RESUMEN DE SALUD — generado el ${fmtFecha(hoyISO())} por mi app personal "Mi Salud".`);
-  L.push(`Es un resumen informativo de mi historia clínica organizada a partir de mis exámenes. No es diagnóstico; lo interpreta mi médico. Por favor ayúdame a entenderlo y conversar sobre mi estado de salud.`);
+  L.push(`Es un resumen informativo de mi historia clínica organizada a partir de mis exámenes. No es diagnóstico; lo interpreta mi médico. Por favor ayúdame a entenderlo y a conversar sobre mi estado de salud, correlacionando los distintos exámenes entre sí.`);
   L.push("");
+
+  // Panorama y prioridades (calculados en vivo).
+  const U = ultimasPorNombre(estado);
+  const arr = Object.values(U);
+  const fueras = arr.filter(m => m.fuera === "alto" || m.fuera === "bajo");
+  const marc = fueras.filter(m => nivelInd(m) === "marcado");
+  const leves = fueras.filter(m => nivelInd(m) === "leve");
+  const areas = [...new Set(fueras.map(m => m.categoria || "Otros"))];
+  if (arr.length) {
+    L.push("=== PANORAMA (al día de hoy) ===");
+    L.push(`- Indicadores en seguimiento: ${arr.length} (a partir de ${estado.examenes.length} exámenes).`);
+    L.push(`- Fuera de rango: ${fueras.length} (${marc.length} marcados, ${leves.length} leves).`);
+    if (areas.length) L.push(`- Áreas con señales: ${areas.join(", ")}.`);
+    L.push("");
+  }
+  if (fueras.length) {
+    L.push("=== PRIORIDADES (lo que conviene mirar primero) ===");
+    const linea = (m) => {
+      const dir = m.fuera === "alto" ? "alto" : "bajo";
+      const et = nivelInd(m) === "marcado" ? `${dir.toUpperCase()} (marcado)` : `${dir} leve`;
+      return `- ${m.nombre}: ${m.valor} ${m.unidad || ""} (rango ${m.ref || "—"}) → ${et}`;
+    };
+    marc.forEach(m => L.push(linea(m)));
+    leves.forEach(m => L.push(linea(m)));
+    L.push("");
+  }
+
+  // Correlaciones cruzadas entre exámenes.
+  const corr = correlaciones(estado);
+  if (corr.length) {
+    L.push("=== CORRELACIONES ENTRE EXÁMENES (contexto para conversar, no diagnóstico) ===");
+    corr.forEach(c => L.push(c));
+    L.push("");
+  }
 
   // Indicadores por área (con evolución y análisis).
   const hist = {};

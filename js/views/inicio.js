@@ -92,8 +92,16 @@ function correlaciones(estado) {
     if (tg && !tg.fuera) l += ` y triglicéridos normales (${tg.valor})`;
     out.push(l + ". El manejo se define por el riesgo cardiovascular global (peso, presión, glucosa), no por un solo número.");
   }
-  if (hayExamen(estado, "audiometr")) {
-    out.push(`• Otorrino: tinnitus con audiometría${hayExamen(estado, "senos") ? " y TAC de senos sin causa estructural" : ""}. Pendiente valoración por otorrino, que además cubre el posible componente nasal de la apnea.`);
+  if (hayExamen(estado, "audiometr") || hayExamen(estado, "maxilofacial", "panorám", "cefalometr")) {
+    const hechos = [];
+    if (hayExamen(estado, "audiometr")) hechos.push("audiometría");
+    if (hayExamen(estado, "senos")) hechos.push("TAC de senos sin causa estructural");
+    let l = "• Tinnitus (zumbido de oído): " + (hechos.length ? `${hechos.join(" y ")} ya hechos. ` : "");
+    if (hayExamen(estado, "maxilofacial", "panorám", "cefalometr")) {
+      l += "Radiografías maxilofaciales (panorámica + perfil) pendientes de que el maxilofacial/otorrino evalúen la ATM y la apófisis estiloides (posible tinnitus somatosensorial). ";
+    }
+    l += "Pendiente valoración por otorrino, que además cubre el posible componente nasal de la apnea.";
+    out.push(l);
   }
   return out;
 }
